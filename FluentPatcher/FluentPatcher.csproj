@@ -18,4 +18,19 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     </ItemGroup>
     
+    <ItemGroup>
+        <ProjectReference Include="../FluentPatcher.Analyzer/FluentPatcher.Analyzer.csproj" />
+        <ProjectReference Include="../FluentPatcher.CodeFixes/FluentPatcher.CodeFixes.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FluentPatcher.Analyzer">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="FluentPatcher.CodeFixes">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+    
 </Project>

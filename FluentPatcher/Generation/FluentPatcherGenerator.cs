@@ -9,7 +9,7 @@ namespace FluentPatcher.Generator;
 /// Source generator that processes classes marked with <see cref="PatchForAttribute"/> and generates corresponding PatchContext and Patcher classes.
 /// </summary>
 [Generator]
-public sealed class FluentPatcherGenerator : IIncrementalGenerator
+internal sealed class FluentPatcherGenerator : IIncrementalGenerator
 {
     private const string PatchForAttributeFullName = "FluentPatcher.Attributes.PatchForAttribute";
     private const string PatchForAttributeShortName = "PatchFor";

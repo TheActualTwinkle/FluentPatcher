@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>FluentPatcher.Analyzer</AssemblyName>
+    <RootNamespace>FluentPatcher.Analyzer</RootNamespace>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeAnalyzer>true</IncludeAnalyzer>
+    <IncludeCodeFix>true</IncludeCodeFix>
+    <PackageId>FluentPatcher.Analyzer</PackageId>
+    <Title>FluentPatcher.Analyzer</Title>
+    <Description>Roslyn analyzers and code fixes for FluentPatcher.</Description>
+    <Authors>Fedor Moykin</Authors>
+    <PackageTags>roslyn;analyzer;fluentpatcher</PackageTags>
+    <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
+    <Version>0.1.0</Version>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)FluentPatcher.Analyzer.dll" Pack="true" PackagePath="lib/netstandard2.0/" />
+  </ItemGroup>
+  
+</Project>

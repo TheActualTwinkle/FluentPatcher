@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FluentPatcher.Analyzer/FluentPatcher.Analyzer.csproj" />
+  <Project Path="FluentPatcher.CodeFixes/FluentPatcher.CodeFixes.csproj" />
+  <Project Path="FluentPatcher.Tests/FluentPatcher.Tests.csproj" />
+  <Project Path="FluentPatcher/FluentPatcher.csproj" />
+</Solution>

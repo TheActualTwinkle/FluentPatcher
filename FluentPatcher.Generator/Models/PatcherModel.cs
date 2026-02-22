@@ -1,4 +1,6 @@
-﻿namespace FluentPatcher.Generator.Models;
+﻿using System.Collections.Generic;
+
+namespace FluentPatcher.Generator.Models;
 
 /// <summary>
 /// Model representing a DTO class to generate patcher for.

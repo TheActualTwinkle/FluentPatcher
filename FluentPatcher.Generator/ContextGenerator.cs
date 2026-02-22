@@ -1,4 +1,5 @@
-﻿using FluentPatcher.Generator.Models;
+﻿using System.Linq;
+using FluentPatcher.Generator.Models;
 using System.Text;
 
 namespace FluentPatcher.Generator;

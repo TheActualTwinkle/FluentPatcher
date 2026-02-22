@@ -6,7 +6,7 @@
         <RootNamespace>FluentPatcher</RootNamespace>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageId>FluentPatcher</PackageId>
-        <Version>0.1.0</Version>
+        <Version>0.1.1</Version>
         <Authors>Fedor Moykin</Authors>
         <Description>FluentPatcher: Apply update patch and track changes automaticly</Description>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
@@ -15,12 +15,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
     </ItemGroup>
-    
+
     <ItemGroup>
-        <ProjectReference Include="../FluentPatcher.Analyzer/FluentPatcher.Analyzer.csproj" />
-        <ProjectReference Include="../FluentPatcher.CodeFixes/FluentPatcher.CodeFixes.csproj" />
+        <ProjectReference Include="../FluentPatcher.Analyzer/FluentPatcher.Analyzer.csproj"/>
+        <ProjectReference Include="../FluentPatcher.CodeFixes/FluentPatcher.CodeFixes.csproj"/>
+        <ProjectReference Include="../FluentPatcher.Generator/FluentPatcher.Generator.csproj"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="FluentPatcher.Analyzer">
@@ -31,6 +32,10 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="FluentPatcher.Generator">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
-    
+
 </Project>

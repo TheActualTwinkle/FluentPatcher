@@ -1,4 +1,5 @@
-﻿using FluentPatcher.Generator.Models;
+﻿using System.Linq;
+using FluentPatcher.Generator.Models;
 using Microsoft.CodeAnalysis;
 
 namespace FluentPatcher.Generator;
@@ -16,8 +17,6 @@ internal static class ModelExtractor
             ClassName = classSymbol.Name
         };
 
-        INamedTypeSymbol? targetEntitySymbol = null;
-
         // Extract attribute data
         var patchAttr = classSymbol.GetAttributes()
             .FirstOrDefault(a => a.AttributeClass?.Name is "PatchForAttribute" or "PatchFor");
@@ -28,7 +27,6 @@ internal static class ModelExtractor
             if (patchAttr.ConstructorArguments.Length > 0 &&
                 patchAttr.ConstructorArguments[0].Value is INamedTypeSymbol ctorTypeSymbol)
             {
-                targetEntitySymbol = ctorTypeSymbol;
                 model.TargetEntityTypeName = ctorTypeSymbol.ToDisplayString();
             }
 
@@ -37,10 +35,8 @@ internal static class ModelExtractor
                 {
                     case "TargetEntityType":
                         if (namedArg.Value.Value is INamedTypeSymbol typeSymbol)
-                        {
-                            targetEntitySymbol = typeSymbol;
                             model.TargetEntityTypeName = typeSymbol.ToDisplayString();
-                        }
+
                         break;
                     case "PatcherName":
                         model.CustomPatcherName = namedArg.Value.Value?.ToString();

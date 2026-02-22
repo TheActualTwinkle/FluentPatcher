@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <AssemblyName>FluentPatcher.Generator</AssemblyName>
+        <RootNamespace>FluentPatcher.Generator</RootNamespace>
+        <IsPackable>true</IsPackable>
+        <PackageId>FluentPatcher.Generator</PackageId>
+        <Title>FluentPatcher.Generator</Title>
+        <Description>Roslyn source generator for FluentPatcher.</Description>
+        <Authors>Fedor Moykin</Authors>
+        <PackageTags>roslyn;sourcegenerator;fluentpatcher</PackageTags>
+        <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
+        <Version>0.1.1</Version>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+    </ItemGroup>
+
+    <PropertyGroup>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs/" />
+        <None Include="$(OutputPath)$(AssemblyName).pdb" Pack="true" PackagePath="analyzers/dotnet/cs/" />
+    </ItemGroup>
+
+</Project>

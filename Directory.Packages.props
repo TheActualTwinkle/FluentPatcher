@@ -14,5 +14,6 @@
     <PackageVersion Include="coverlet.collector" Version="8.0.0" />
     <PackageVersion Include="FluentPatcher.Analyzer" Version="0.1.0" />
     <PackageVersion Include="FluentPatcher.CodeFixes" Version="0.1.0" />
+    <PackageVersion Include="FluentPatcher.Generator" Version="0.1.0" />
   </ItemGroup>
 </Project>

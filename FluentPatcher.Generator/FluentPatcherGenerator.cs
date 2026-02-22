@@ -1,12 +1,13 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
-using FluentPatcher.Attributes;
+using System.Linq;
 
 namespace FluentPatcher.Generator;
 
 /// <summary>
-/// Source generator that processes classes marked with <see cref="PatchForAttribute"/> and generates corresponding PatchContext and Patcher classes.
+/// Source generator that generates corresponding PatchContext and Patcher classes.
 /// </summary>
 [Generator]
 internal sealed class FluentPatcherGenerator : IIncrementalGenerator

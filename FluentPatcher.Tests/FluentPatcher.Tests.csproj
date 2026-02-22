@@ -16,9 +16,11 @@
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\FluentPatcher\FluentPatcher.csproj"
+        <ProjectReference Include="..\FluentPatcher\FluentPatcher.csproj"/>
+        
+        <ProjectReference Include="..\FluentPatcher.Generator\FluentPatcher.Generator.csproj"
                           OutputItemType="Analyzer"
-                          ReferenceOutputAssembly="true"/>
+                          ReferenceOutputAssembly="false"/>
         <ProjectReference Include="..\FluentPatcher.Analyzer\FluentPatcher.Analyzer.csproj"
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="false"/>

@@ -27,7 +27,7 @@ public class User
 [PatchFor(typeof(UserEntity))]
 public class UserUpdateDto
 {
-    public Patchable<string?> Name { get; set; }
+    public Patchable<string> Name { get; set; }
 }
 ```
 

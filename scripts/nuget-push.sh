@@ -17,6 +17,8 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+echo Version = $VERSION
+
 if [ -z "$NUGET_API_KEY" ]; then
   echo "NUGET_API_KEY environment variable not set"
   exit 1
@@ -33,7 +35,9 @@ dotnet pack -c Release FluentPatcher.CodeFixes/FluentPatcher.CodeFixes.csproj --
 dotnet pack -c Release FluentPatcher.Generator/FluentPatcher.Generator.csproj --output nupkg
 dotnet pack -c Release FluentPatcher/FluentPatcher.csproj --output nupkg
 
-# Publish FluentPatcher.Generator package
 dotnet nuget push nupkg/FluentPatcher.Generator.$VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push nupkg/FluentPatcher.Analyzer.$VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push nupkg/FluentPatcher.CodeFixes.$VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push nupkg/FluentPatcher.$VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
 
 echo "Done!"

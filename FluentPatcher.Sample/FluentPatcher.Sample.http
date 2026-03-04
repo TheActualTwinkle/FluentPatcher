@@ -1,0 +1,65 @@
+﻿@host = http://localhost:4792
+
+### Create a user (initializes in-memory user and returns it)
+POST {{host}}/user
+Content-Type: application/json
+
+{}
+
+### Partially update user — change only Name and Email
+PATCH {{host}}/user
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com"
+}
+
+### Partially update user — set Email to null and update Age
+PATCH {{host}}/user
+Content-Type: application/json
+
+{
+  "email": null,
+  "age": 35
+}
+
+### Partially update user — update HomeAddress
+PATCH {{host}}/user
+Content-Type: application/json
+
+{
+  "homeAddress": {
+    "street": "New Home st. 42",
+    "city": "Los Angeles",
+    "country": "USA",
+    "postalCode": "90001"
+  }
+}
+
+### Partially update user — update WorkAddresses collection
+PATCH {{host}}/user
+Content-Type: application/json
+
+{
+  "workAddresses": [
+    {
+      "street": "New Office st. 100",
+      "city": "San Francisco",
+      "country": "USA",
+      "postalCode": "94016"
+    },
+    {
+      "street": "Remote Office st. 5",
+      "city": "Austin",
+      "country": "USA",
+      "postalCode": "73301"
+    }
+  ]
+}
+
+### Empty PATCH — no changes applied, change context should be empty
+PATCH {{host}}/user
+Content-Type: application/json
+
+{}

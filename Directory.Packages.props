@@ -7,14 +7,15 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" />
     <PackageVersion Include="System.Composition" Version="10.0.3" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.3" />
     <PackageVersion Include="FluentAssertions" Version="8.8.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="coverlet.collector" Version="8.0.0" />
     <PackageVersion Include="FluentPatcher" Version="0.1.1" />
-    <PackageVersion Include="FluentPatcher.Analyzer" Version="0.1.0" />
-    <PackageVersion Include="FluentPatcher.CodeFixes" Version="0.1.0" />
-    <PackageVersion Include="FluentPatcher.Generator" Version="0.1.0" />
+    <PackageVersion Include="FluentPatcher.Analyzer" Version="0.1.1" />
+    <PackageVersion Include="FluentPatcher.CodeFixes" Version="0.1.1" />
+    <PackageVersion Include="FluentPatcher.Generator" Version="0.1.1" />
   </ItemGroup>
 </Project>

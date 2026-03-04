@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+        <PackageReference Include="System.Text.Json"/>
     </ItemGroup>
 
     <ItemGroup>

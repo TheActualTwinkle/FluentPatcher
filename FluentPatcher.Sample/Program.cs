@@ -1,6 +1,12 @@
+using FluentPatcher;
 using FluentPatcher.Sample.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new PatchableJsonConverterFactory());
+});
 
 var app = builder.Build();
 
@@ -47,7 +53,8 @@ app.MapPatch(
         return Results.Ok(
             new
             {
-                result.Entity,
+                result.HasChanges,
+                NewEntity = result.Entity,
                 Changes = changedValues,
                 Summary = summary
             });

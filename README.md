@@ -9,7 +9,7 @@ FluentPatcher is small .NET library for applying partial updates (patches) to yo
 ## Installation
 Add FluentPatcher to your project via NuGet or the .NET CLI:
 
-```cs
+```bash
 dotnet add package FluentPatcher
 ```
 
@@ -24,7 +24,7 @@ public class User
     public string Name { get; set; }
 }
 
-[PatchFor(typeof(UserEntity))]
+[PatchFor(typeof(User))]
 public class UserUpdateDto
 {
     public Patchable<string> Name { get; set; }
@@ -38,7 +38,7 @@ var originalUser = new User
 {
     Id = 1,
     Name = "Bob"
-}
+};
 
 var patch = new UserUpdateDto
 {
@@ -53,6 +53,53 @@ Console.WriteLine(result.Entity.Name); // Output: "Alice"
 Console.WriteLine(result.Context.NameChanged); // Output: true
 Console.WriteLine(result.Context.OldName); // Output: "Bob"
 Console.WriteLine(result.Context.NewName); // Output: "Alice"
+```
+
+## Usage with ASP.NET
+
+In order to use `FluentPatcher` with ASP.NET, you should register a `PatchableJsonConverterFactory`.
+
+This will allow you to deserialize `Patchable<T>` properties from JSON in HTTP request bodies.
+
+```cs
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new PatchableJsonConverterFactory());
+});
+```
+
+This repo includes an example ASP.NET project: `FluentPatcher.Sample`.
+
+## How to get patch summary
+
+After applying a patch you can:
+
+- Access changed values as a dictionary with `GetChangedValues()`
+- Get a human-readable string with `GetChangesSummary()`
+
+Example (HTTP PATCH request):
+
+```http
+### Partially update user — set Email to null and update Age
+PATCH {{host}}/user
+Content-Type: application/json
+
+{
+  "email": null,
+  "age": 35
+}
+```
+
+Expected output:
+
+```json
+{
+  "changes": {
+    "Email": null,
+    "Age": 35
+  },
+  "summary": "Email: 'john.doe@example.com' -> null\nAge: '30' -> '35'"
+}
 ```
 
 ## License

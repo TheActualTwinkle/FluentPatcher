@@ -2,6 +2,7 @@
   <Project Path="FluentPatcher.Analyzer/FluentPatcher.Analyzer.csproj" />
   <Project Path="FluentPatcher.CodeFixes/FluentPatcher.CodeFixes.csproj" />
   <Project Path="FluentPatcher.Generator/FluentPatcher.Generator.csproj" />
+  <Project Path="FluentPatcher.Sample/FluentPatcher.Sample.csproj" />
   <Project Path="FluentPatcher.Tests/FluentPatcher.Tests.csproj" />
   <Project Path="FluentPatcher/FluentPatcher.csproj" />
 </Solution>

@@ -6,7 +6,7 @@
         <RootNamespace>FluentPatcher</RootNamespace>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageId>FluentPatcher</PackageId>
-        <Version>0.1.1</Version>
+        <Version>0.1.2</Version>
         <Authors>Fedor Moykin</Authors>
         <Description>FluentPatcher: Apply update patch and track changes automaticly</Description>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+        <PackageReference Include="System.Text.Json"/>
     </ItemGroup>
 
     <ItemGroup>

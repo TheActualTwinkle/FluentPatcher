@@ -1,8 +1,7 @@
 ﻿namespace FluentPatcher;
 
 /// <summary>
-/// Represents an optional value that distinguishes between "not set" and "explicitly set to null".
-/// Use this for properties where you need to explicitly set null values.
+/// Represents an optional value that distinguishes between "not set" and "set" (including null).
 /// </summary>
 /// <typeparam name="T">The type of the value.</typeparam>
 public readonly struct Patchable<T>
@@ -28,7 +27,7 @@ public readonly struct Patchable<T>
         : throw new InvalidOperationException("Patchable has no value set. Check HasValue first.");
 
     /// <summary>
-    /// Creates a Patchable with a value (can be null for reference types).
+    /// Creates a Patchable with a value.
     /// </summary>
     public static Patchable<T> Set(T? value) => new(value, true);
 

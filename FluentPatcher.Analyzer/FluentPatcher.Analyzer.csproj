@@ -14,7 +14,7 @@
         <Authors>Fedor Moykin</Authors>
         <PackageTags>roslyn;analyzer;fluentpatcher</PackageTags>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
-        <Version>0.1.1</Version>
+        <Version>0.1.2</Version>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     </PropertyGroup>

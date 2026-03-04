@@ -37,7 +37,7 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        /// <typeparam name=\"TEntity\">The type of entity to patch.</typeparam>");
         sb.AppendLine("        /// <param name=\"patch\">The patch DTO.</param>");
         sb.AppendLine("        /// <param name=\"existing\">The existing entity to patch.</param>");
-        sb.AppendLine("        /// <param name=\"cloneEntity\">Optional function to clone the entity. If null, modifies in place.</param>");
+        sb.AppendLine("        /// <param name=\"cloneEntity\">Function to custom entity cloner. If null, modifies with Activator.</param>");
         sb.AppendLine($"        /// <returns>A PatchResult containing the updated entity and {model.ContextClassName}.</returns>");
         sb.AppendLine($"        public static PatchResult<TEntity, {model.ContextClassName}> ApplyTo<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");

@@ -19,6 +19,8 @@ internal static class ContextGenerator
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Linq;");
+        sb.AppendLine("using System.Text.Json;");
+        sb.AppendLine("using System.Collections;");
         sb.AppendLine("using FluentPatcher.Context;");
         sb.AppendLine();
         sb.AppendLine($"namespace {model.Namespace}");
@@ -30,6 +32,40 @@ internal static class ContextGenerator
         sb.AppendLine($"    /// </summary>");
         sb.AppendLine($"    public sealed class {model.ContextClassName} : PatchContextBase");
         sb.AppendLine("    {");
+
+        // Helper for printing values in summaries.
+        sb.AppendLine("        private static string FormatChangeValue(object? value)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            if (value is null) return \"null\";");
+        sb.AppendLine();
+        sb.AppendLine("            // Keep strings human-readable and consistent with previous output.");
+        sb.AppendLine("            if (value is string s) return $\"'{s}'\";");
+        sb.AppendLine();
+        sb.AppendLine("            // For complex types and collections, JSON is usually much more helpful than TypeName.ToString().");
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+        sb.AppendLine("                var t = value.GetType();");
+        sb.AppendLine();
+        sb.AppendLine("                // Don't JSON-encode primitives/enums/DateTime/etc. — keep previous compact formatting.");
+        sb.AppendLine("                if (t.IsPrimitive || t.IsEnum || value is decimal || value is DateTime || value is DateTimeOffset || value is Guid || value is TimeSpan)");
+        sb.AppendLine("                    return $\"'{value}'\";");
+        sb.AppendLine();
+        sb.AppendLine("                // Collections (except string) and POCOs => JSON.");
+        sb.AppendLine("                if (value is IEnumerable && value is not IDictionary)");
+        sb.AppendLine("                    return JsonSerializer.Serialize(value);");
+        sb.AppendLine();
+        sb.AppendLine("                // Complex reference types => JSON.");
+        sb.AppendLine("                if (!t.IsValueType)");
+        sb.AppendLine("                    return JsonSerializer.Serialize(value);");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch");
+        sb.AppendLine("            {");
+        sb.AppendLine("                // ignore and fallback below");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            return $\"'{value}'\";");
+        sb.AppendLine("        }");
+        sb.AppendLine();
             
         // Generate properties for each field
         foreach (var prop in model.Properties)
@@ -108,7 +144,7 @@ internal static class ContextGenerator
             
         foreach (var prop in changedProps)
         {
-            sb.AppendLine($"            if ({prop.Name}Changed) changes.Add($\"{prop.Name}: '{{Old{prop.Name}}}' -> '{{New{prop.Name}}}'\");");
+            sb.AppendLine($"            if ({prop.Name}Changed) changes.Add($\"{prop.Name}: {{FormatChangeValue(Old{prop.Name})}} -> {{FormatChangeValue(New{prop.Name})}}\");");
         }
             
         sb.AppendLine("            return string.Join(\"\\n\", changes);");

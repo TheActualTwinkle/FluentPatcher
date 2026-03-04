@@ -1,6 +1,8 @@
-// using FluentPatcher;
-// using FluentPatcher.Sample.Models;
-//
+using FluentPatcher;
+using FluentPatcher.Sample.Models;
+
+return;
+
 // var builder = WebApplication.CreateBuilder(args);
 //
 // builder.Services.ConfigureHttpJsonOptions(options =>

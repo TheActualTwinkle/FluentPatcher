@@ -83,9 +83,10 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var type = typeof(TEntity);");
         sb.AppendLine("            var clone = (TEntity)Activator.CreateInstance(type)!;");
-        sb.AppendLine("            foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))");
+        sb.AppendLine("            foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))");
         sb.AppendLine("            {");
         sb.AppendLine("                if (!prop.CanRead || !prop.CanWrite) continue;");
+        sb.AppendLine("                if (prop.GetIndexParameters().Length != 0) continue;");
         sb.AppendLine("                var value = prop.GetValue(source);");
         sb.AppendLine("                prop.SetValue(clone, value);");
         sb.AppendLine("            }");
@@ -130,7 +131,7 @@ internal static class PatcherClassGenerator
         var targetProp = prop.EffectiveTargetName;
             
         sb.AppendLine($"            // Patch {prop.Name}");
-        sb.AppendLine($"            var prop{prop.Name} = entityType.GetProperty(\"{targetProp}\");");
+        sb.AppendLine($"            var prop{prop.Name} = entityType.GetProperty(\"{targetProp}\", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);");
         sb.AppendLine($"            if (prop{prop.Name} != null && prop{prop.Name}.CanWrite)");
         sb.AppendLine("            {");
         GeneratePatchablePropertyCode(sb, prop);

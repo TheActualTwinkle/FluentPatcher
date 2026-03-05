@@ -127,7 +127,10 @@ public sealed class FluentPatcherAnalyzer : DiagnosticAnalyzer
                             targetName = s;
 
                 var hasMatch = targetEntitySymbol.GetMembers().OfType<IPropertySymbol>()
-                    .Any(p => p.Name == targetName && p.DeclaredAccessibility == Accessibility.Public && !p.IsStatic);
+                    .Any(p =>
+                        p.Name == targetName &&
+                        p.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal &&
+                        !p.IsStatic);
 
                 if (!hasMatch)
                 {

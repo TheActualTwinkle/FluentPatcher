@@ -5,11 +5,12 @@
         <RootNamespace>FluentPatcher.CodeFixes</RootNamespace>
         <IsPackable>true</IsPackable>
         <PackageId>FluentPatcher.CodeFixes</PackageId>
-        <Version>0.1.2</Version>
+        <Version>0.1.3</Version>
         <Authors>Fedor Moykin</Authors>
         <Description>Code fixes for FluentPatcher analyzers.</Description>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <PackageIcon>logo.png</PackageIcon>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -24,5 +25,9 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../.github/images/logo.png" Pack="true" PackagePath="/" Visible="false" />
     </ItemGroup>
 </Project>

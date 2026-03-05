@@ -6,12 +6,13 @@
         <RootNamespace>FluentPatcher</RootNamespace>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageId>FluentPatcher</PackageId>
-        <Version>0.1.2</Version>
+        <Version>0.1.3</Version>
         <Authors>Fedor Moykin</Authors>
         <Description>FluentPatcher: Apply update patch and track changes automaticly</Description>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageIcon>logo.png</PackageIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -37,6 +38,10 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../.github/images/logo.png" Pack="true" PackagePath="/" Visible="false" />
     </ItemGroup>
 
 </Project>

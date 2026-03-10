@@ -7,7 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentPatcher"/>
+        <ProjectReference Include="..\FluentPatcher\FluentPatcher.csproj" />
+
+        <ProjectReference Include="..\FluentPatcher.Generator\FluentPatcher.Generator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\FluentPatcher.Analyzer\FluentPatcher.Analyzer.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\FluentPatcher.CodeFixes\FluentPatcher.CodeFixes.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
     </ItemGroup>
 
 </Project>

@@ -11,7 +11,7 @@ public class UserUpdateDto
     /// <summary>
     /// New user name.
     /// </summary>
-    public Patchable<string?> Name { get; init; }
+    public Patchable<string> Name { get; init; }
 
     /// <summary>
     /// New user email.
@@ -26,7 +26,7 @@ public class UserUpdateDto
     /// <summary>
     /// New work addresses for the user.
     /// </summary>
-    public Patchable<List<Address>?> WorkAddresses { get; init; }
+    public Patchable<List<Address>> WorkAddresses { get; init; }
 
     /// <summary>
     /// New home address for the user.

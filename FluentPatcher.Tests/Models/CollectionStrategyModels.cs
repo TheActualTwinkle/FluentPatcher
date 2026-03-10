@@ -30,7 +30,7 @@ public sealed class CollectionStrategyReplaceUpdateDto
     /// Collection to replace the existing one on the entity. When applied, the entire collection on the entity will be replaced with this new collection.
     /// </summary>
     [CollectionPatchStrategy(Strategy = CollectionPatchStrategy.Replace)]
-    public Patchable<List<Address>?> ReplaceItems { get; init; }
+    public Patchable<List<Address>> ReplaceItems { get; init; }
 }
 
 // /// <summary>

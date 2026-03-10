@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Immutable;
+ using System.Collections.Immutable;
 using System.Composition;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -19,6 +17,11 @@ public sealed class FluentPatcherCodeFixProvider : CodeFixProvider
     private const string Fp0002 = "FP0002";
     private const string Fp0003 = "FP0003";
 
+    private static readonly SymbolDisplayFormat MinimalTypeDisplayFormat = SymbolDisplayFormat.MinimallyQualifiedFormat
+        .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+                                  SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier |
+                                  SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
+
     public override ImmutableArray<string> FixableDiagnosticIds =>
         [Fp0001, Fp0002, Fp0003];
 
@@ -30,7 +33,7 @@ public sealed class FluentPatcherCodeFixProvider : CodeFixProvider
         var diagnostic = context.Diagnostics.FirstOrDefault();
         if (diagnostic == null)
             return;
-            
+
         var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
         if (root is null)
@@ -60,18 +63,19 @@ public sealed class FluentPatcherCodeFixProvider : CodeFixProvider
                             _ => Task.FromResult(AddPatchPropertyAttribute(context.Document, root, propForAttribute)),
                             nameof(FluentPatcherCodeFixProvider) + "_FP0002"),
                         diagnostic);
-                
+
                 break;
-            
+
             case Fp0003:
-                var propForNullable = node.AncestorsAndSelf().OfType<PropertyDeclarationSyntax>().FirstOrDefault();
-                if (propForNullable != null)
+                var propForNullability = node.AncestorsAndSelf().OfType<PropertyDeclarationSyntax>().FirstOrDefault();
+                if (propForNullability != null)
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            "Make Patchable inner type nullable",
-                            _ => Task.FromResult(MakePatchableInnerTypeNullable(context.Document, root, propForNullable)),
+                            "Match Patchable<T> nullability to target property",
+                            _ => MatchPatchableInnerTypeToTargetPropertyAsync(context.Document, root, propForNullability),
                             nameof(FluentPatcherCodeFixProvider) + "_FP0003"),
                         diagnostic);
+
                 break;
         }
     }
@@ -143,61 +147,89 @@ public sealed class FluentPatcherCodeFixProvider : CodeFixProvider
         return document.WithSyntaxRoot(newRoot);
     }
 
-    private static Document MakePatchableInnerTypeNullable(
+    private static async Task<Document> MatchPatchableInnerTypeToTargetPropertyAsync(
         Document document,
         SyntaxNode root,
         PropertyDeclarationSyntax property)
     {
-        var originalType = property.Type;
+        if (property.Type is not GenericNameSyntax genericName ||
+            genericName.Identifier.Text != "Patchable" ||
+            genericName.TypeArgumentList.Arguments.Count != 1)
+            return document;
 
-        // If Patchable<T>
-        if (originalType is GenericNameSyntax genericName &&
-            genericName.Identifier.Text == "Patchable" &&
-            genericName.TypeArgumentList.Arguments.Count == 1)
-        {
-            var innerType = genericName.TypeArgumentList.Arguments[0];
+        var semanticModel = await document.GetSemanticModelAsync().ConfigureAwait(false);
+        if (semanticModel is null)
+            return document;
 
-            // If already nullable, do nothing
-            if (innerType is NullableTypeSyntax)
-                return document;
+        var propertySymbol = semanticModel.GetDeclaredSymbol(property) as IPropertySymbol;
+        if (propertySymbol is null)
+            return document;
 
-            // If reference type and not nullable, add ?
-            TypeSyntax newInnerType;
-            if (innerType is PredefinedTypeSyntax || innerType is IdentifierNameSyntax || innerType is QualifiedNameSyntax || innerType is GenericNameSyntax)
-            {
-                newInnerType = SyntaxFactory.NullableType(innerType.WithoutTrivia());
-            }
-            else
-            {
-                newInnerType = SyntaxFactory.NullableType(innerType.WithoutTrivia());
-            }
+        var targetProperty = GetTargetPropertySymbol(propertySymbol);
+        if (targetProperty is null)
+            return document;
 
-            var newGeneric = genericName.WithTypeArgumentList(
-                SyntaxFactory.TypeArgumentList(
-                    SyntaxFactory.SingletonSeparatedList(newInnerType)
-                )
-            ).WithTriviaFrom(genericName);
+        var replacementTypeName = targetProperty.Type.ToMinimalDisplayString(semanticModel, property.SpanStart, MinimalTypeDisplayFormat);
+        var replacementType = SyntaxFactory.ParseTypeName(replacementTypeName)
+            .WithTriviaFrom(genericName.TypeArgumentList.Arguments[0]);
 
-            var newProperty = property.WithType(newGeneric);
-            var newRoot = root.ReplaceNode(property, newProperty);
-            return document.WithSyntaxRoot(newRoot);
-        }
+        var newGeneric = genericName.WithTypeArgumentList(
+            SyntaxFactory.TypeArgumentList(
+                SyntaxFactory.SingletonSeparatedList(replacementType)));
 
-        // If not Patchable<T>, just make type nullable
-        if (originalType is PredefinedTypeSyntax || originalType is IdentifierNameSyntax || originalType is QualifiedNameSyntax || originalType is GenericNameSyntax)
-        {
-            // If already nullable, do nothing
-            if (originalType is NullableTypeSyntax)
-                return document;
+        var newProperty = property.WithType(newGeneric.WithTriviaFrom(property.Type));
+        var newRoot = root.ReplaceNode(property, newProperty);
 
-            var newType = SyntaxFactory.NullableType(originalType.WithoutTrivia()).WithTriviaFrom(originalType);
-            var newProperty = property.WithType(newType);
-            var newRoot = root.ReplaceNode(property, newProperty);
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        // Otherwise, do nothing
-        return document;
+        return document.WithSyntaxRoot(newRoot);
     }
 
+    private static IPropertySymbol? GetTargetPropertySymbol(IPropertySymbol patchProperty)
+    {
+        var patchClass = patchProperty.ContainingType;
+        var targetEntity = GetTargetEntitySymbol(patchClass);
+        if (targetEntity is null)
+            return null;
+
+        var targetPropertyName = GetTargetPropertyName(patchProperty);
+
+        return targetEntity.GetMembers().OfType<IPropertySymbol>()
+            .FirstOrDefault(p =>
+                p.Name == targetPropertyName &&
+                p.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal &&
+                !p.IsStatic);
+    }
+
+    private static INamedTypeSymbol? GetTargetEntitySymbol(INamedTypeSymbol patchClass)
+    {
+        var patchAttr = patchClass.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.Name is "PatchForAttribute" or "PatchFor");
+
+        if (patchAttr is null)
+            return null;
+
+        if (patchAttr.ConstructorArguments.Length > 0 &&
+            patchAttr.ConstructorArguments[0].Value is INamedTypeSymbol ctorTypeSymbol)
+            return ctorTypeSymbol;
+
+        foreach (var namedArg in patchAttr.NamedArguments)
+            if (namedArg.Key == "TargetEntityType" && namedArg.Value.Value is INamedTypeSymbol typeSymbol)
+                return typeSymbol;
+
+        return null;
+    }
+
+    private static string GetTargetPropertyName(IPropertySymbol patchProperty)
+    {
+        var patchPropertyAttr = patchProperty.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.Name is "PatchPropertyAttribute" or "PatchProperty");
+
+        if (patchPropertyAttr != null)
+            foreach (var namedArg in patchPropertyAttr.NamedArguments)
+                if (namedArg.Key == "TargetPropertyName" &&
+                    namedArg.Value.Value is string s &&
+                    !string.IsNullOrWhiteSpace(s))
+                    return s;
+
+        return patchProperty.Name;
+    }
 }

@@ -170,6 +170,9 @@ internal static class PatcherClassGenerator
     private static bool IsOuterNullableType(string typeName)
     {
         var trimmed = typeName.Trim();
-        return trimmed.EndsWith("?");
+        return trimmed.EndsWith("?")
+            || trimmed.StartsWith("Nullable<")
+            || trimmed.StartsWith("System.Nullable<")
+            || trimmed.StartsWith("global::System.Nullable<");
     }
 }

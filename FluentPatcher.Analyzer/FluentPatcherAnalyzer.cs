@@ -24,16 +24,16 @@ public sealed class FluentPatcherAnalyzer : DiagnosticAnalyzer
         DiagnosticSeverity.Warning,
         true);
 
-    private static readonly DiagnosticDescriptor PatchableInnerTypeMustBeNullableError = new(
+    private static readonly DiagnosticDescriptor PatchableInnerTypeNullabilityMismatchError = new(
         "FP0003",
-        "Patchable inner type must be nullable",
-        "Property '{0}' in patch class '{1}' uses Patchable<{2}>, but '{2}' must be nullable",
+        "Patchable inner type nullability must match target property",
+        "Property '{0}' in patch class '{1}' uses Patchable<{2}>, but target property '{3}' on '{4}' has type '{5}'. Use Patchable<{5}>.",
         "FluentPatcher",
         DiagnosticSeverity.Error,
         true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        [NonPatchablePropertyError, UnmatchedPropertyWarning, PatchableInnerTypeMustBeNullableError];
+        [NonPatchablePropertyError, UnmatchedPropertyWarning, PatchableInnerTypeNullabilityMismatchError];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -49,27 +49,8 @@ public sealed class FluentPatcherAnalyzer : DiagnosticAnalyzer
         if (!classSymbol.GetAttributes().Any(a => a.AttributeClass?.Name is "PatchForAttribute" or "PatchFor"))
             return;
 
-        var patchAttr = classSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name is "PatchForAttribute" or "PatchFor");
-        INamedTypeSymbol? targetEntitySymbol = null;
-        string? targetEntityTypeName = null;
-
-        if (patchAttr != null)
-        {
-            if (patchAttr.ConstructorArguments.Length > 0 &&
-                patchAttr.ConstructorArguments[0].Value is INamedTypeSymbol ctorTypeSymbol)
-            {
-                targetEntitySymbol = ctorTypeSymbol;
-                targetEntityTypeName = ctorTypeSymbol.ToDisplayString();
-            }
-
-            foreach (var namedArg in patchAttr.NamedArguments)
-                if (namedArg.Key == "TargetEntityType" &&
-                    namedArg.Value.Value is INamedTypeSymbol typeSymbol)
-                {
-                    targetEntitySymbol = typeSymbol;
-                    targetEntityTypeName = typeSymbol.ToDisplayString();
-                }
-        }
+        var targetEntitySymbol = GetTargetEntitySymbol(classSymbol);
+        var targetEntityTypeName = targetEntitySymbol?.ToDisplayString();
 
         foreach (var member in classSymbol.GetMembers())
         {
@@ -86,62 +67,98 @@ public sealed class FluentPatcherAnalyzer : DiagnosticAnalyzer
             if (!isPatchable)
             {
                 var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-
                 var diag = Diagnostic.Create(
-                    NonPatchablePropertyError, propertySymbol.Locations.FirstOrDefault(), propertySymbol.Name, classSymbol.Name, typeName);
+                    NonPatchablePropertyError,
+                    propertySymbol.Locations.FirstOrDefault(),
+                    propertySymbol.Name,
+                    classSymbol.Name,
+                    typeName);
 
                 context.ReportDiagnostic(diag);
-
                 continue;
             }
 
-            if (propertySymbol.Type is INamedTypeSymbol patchableType &&
-                patchableType.TypeArguments.Length == 1)
+            if (targetEntitySymbol is null)
+                continue;
+
+            var targetProperty = GetTargetPropertySymbol(propertySymbol, targetEntitySymbol);
+            if (targetProperty is null)
             {
-                var innerType = patchableType.TypeArguments[0];
+                var diag = Diagnostic.Create(
+                    UnmatchedPropertyWarning,
+                    propertySymbol.Locations.FirstOrDefault(),
+                    propertySymbol.Name,
+                    classSymbol.Name,
+                    targetEntityTypeName ?? targetEntitySymbol.ToDisplayString(),
+                    GetTargetPropertyName(propertySymbol));
 
-                if (!IsNullableType(innerType))
-                {
-                    var innerTypeName = innerType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-
-                    var diag = Diagnostic.Create(
-                        PatchableInnerTypeMustBeNullableError, propertySymbol.Locations.FirstOrDefault(), propertySymbol.Name, classSymbol.Name,
-                        innerTypeName);
-
-                    context.ReportDiagnostic(diag);
-                }
+                context.ReportDiagnostic(diag);
+                continue;
             }
 
-            if (targetEntitySymbol is not null)
+            if (!HasMatchingNullability(propertySymbol.Type, targetProperty.Type))
             {
-                var targetName = propertySymbol.Name;
+                var actualInnerTypeName = GetPatchableInnerTypeDisplayName(propertySymbol.Type);
+                var targetTypeName = GetTypeDisplayName(targetProperty.Type);
+                var diag = Diagnostic.Create(
+                    PatchableInnerTypeNullabilityMismatchError,
+                    propertySymbol.Locations.FirstOrDefault(),
+                    propertySymbol.Name,
+                    classSymbol.Name,
+                    actualInnerTypeName,
+                    targetProperty.Name,
+                    targetEntityTypeName ?? targetEntitySymbol.ToDisplayString(),
+                    targetTypeName);
 
-                var patchPropertyAttr = propertySymbol.GetAttributes()
-                    .FirstOrDefault(a => a.AttributeClass?.Name is "PatchPropertyAttribute" or "PatchProperty");
-
-                if (patchPropertyAttr != null)
-                    foreach (var namedArg in patchPropertyAttr.NamedArguments)
-                        if (namedArg.Key == "TargetPropertyName" &&
-                            namedArg.Value.Value is string s &&
-                            !string.IsNullOrWhiteSpace(s))
-                            targetName = s;
-
-                var hasMatch = targetEntitySymbol.GetMembers().OfType<IPropertySymbol>()
-                    .Any(p =>
-                        p.Name == targetName &&
-                        p.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal &&
-                        !p.IsStatic);
-
-                if (!hasMatch)
-                {
-                    var diag = Diagnostic.Create(
-                        UnmatchedPropertyWarning, propertySymbol.Locations.FirstOrDefault(), propertySymbol.Name, classSymbol.Name,
-                        targetEntityTypeName ?? targetEntitySymbol.ToDisplayString(), targetName);
-
-                    context.ReportDiagnostic(diag);
-                }
+                context.ReportDiagnostic(diag);
             }
         }
+    }
+
+    private static INamedTypeSymbol? GetTargetEntitySymbol(INamedTypeSymbol classSymbol)
+    {
+        var patchAttr = classSymbol.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.Name is "PatchForAttribute" or "PatchFor");
+
+        if (patchAttr is null)
+            return null;
+
+        if (patchAttr.ConstructorArguments.Length > 0 &&
+            patchAttr.ConstructorArguments[0].Value is INamedTypeSymbol ctorTypeSymbol)
+            return ctorTypeSymbol;
+
+        foreach (var namedArg in patchAttr.NamedArguments)
+            if (namedArg.Key == "TargetEntityType" &&
+                namedArg.Value.Value is INamedTypeSymbol typeSymbol)
+                return typeSymbol;
+
+        return null;
+    }
+
+    private static IPropertySymbol? GetTargetPropertySymbol(IPropertySymbol patchProperty, INamedTypeSymbol targetEntitySymbol)
+    {
+        var targetName = GetTargetPropertyName(patchProperty);
+
+        return targetEntitySymbol.GetMembers().OfType<IPropertySymbol>()
+            .FirstOrDefault(p =>
+                p.Name == targetName &&
+                p.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal &&
+                !p.IsStatic);
+    }
+
+    private static string GetTargetPropertyName(IPropertySymbol patchProperty)
+    {
+        var patchPropertyAttr = patchProperty.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.Name is "PatchPropertyAttribute" or "PatchProperty");
+
+        if (patchPropertyAttr != null)
+            foreach (var namedArg in patchPropertyAttr.NamedArguments)
+                if (namedArg.Key == "TargetPropertyName" &&
+                    namedArg.Value.Value is string s &&
+                    !string.IsNullOrWhiteSpace(s))
+                    return s;
+
+        return patchProperty.Name;
     }
 
     private static bool IsPatchable(ITypeSymbol type)
@@ -151,22 +168,61 @@ public sealed class FluentPatcherAnalyzer : DiagnosticAnalyzer
 
         var typeName = namedType.OriginalDefinition.ToDisplayString();
 
-        if (typeName == "FluentPatcher.Patchable<T>" ||
-            (namedType.Name == "Patchable" && namedType.TypeArguments.Length == 1))
-            return true;
-
-        return false;
+        return typeName == "FluentPatcher.Patchable<T>" ||
+               (namedType.Name == "Patchable" && namedType.TypeArguments.Length == 1);
     }
 
-    private static bool IsNullableType(ITypeSymbol type)
+    private static bool HasMatchingNullability(ITypeSymbol patchableType, ITypeSymbol targetType)
     {
-        if (type.NullableAnnotation == NullableAnnotation.Annotated)
+        if (patchableType is not INamedTypeSymbol namedPatchable || namedPatchable.TypeArguments.Length != 1)
             return true;
 
-        if (type is INamedTypeSymbol namedType &&
-            namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
-            return true;
+        var patchInnerType = namedPatchable.TypeArguments[0];
+        var patchNullability = GetNullabilityKind(patchInnerType);
+        var targetNullability = GetNullabilityKind(targetType);
 
-        return false;
+        return patchNullability == NullabilityKind.Unknown ||
+               targetNullability == NullabilityKind.Unknown ||
+               patchNullability == targetNullability;
+    }
+
+    private static string GetPatchableInnerTypeDisplayName(ITypeSymbol patchableType)
+    {
+        if (patchableType is INamedTypeSymbol namedPatchable && namedPatchable.TypeArguments.Length == 1)
+            return GetTypeDisplayName(namedPatchable.TypeArguments[0]);
+
+        return patchableType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+    }
+
+    private static string GetTypeDisplayName(ITypeSymbol type) =>
+        type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat.WithMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+
+    private static NullabilityKind GetNullabilityKind(ITypeSymbol type)
+    {
+        if (type is INamedTypeSymbol namedType && namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            return NullabilityKind.Nullable;
+
+        if (type.IsReferenceType)
+            return type.NullableAnnotation switch
+            {
+                NullableAnnotation.Annotated => NullabilityKind.Nullable,
+                NullableAnnotation.NotAnnotated => NullabilityKind.NonNullable,
+                _ => NullabilityKind.Unknown
+            };
+
+        if (type.IsValueType)
+            return NullabilityKind.NonNullable;
+
+        return NullabilityKind.Unknown;
+    }
+
+    private enum NullabilityKind
+    {
+        Unknown,
+        NonNullable,
+        Nullable
     }
 }
+

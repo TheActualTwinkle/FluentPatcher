@@ -24,7 +24,7 @@ public sealed class RenamedEntityPatchWithoutAttribute
     /// but since it has a different name and lacks the <see cref="PatchPropertyAttribute"/>, it will not be mapped to the entity's property during patching.
     /// </summary>
 #pragma warning disable FP0002
-    public Patchable<string?> DifferentName { get; init; }
+    public Patchable<string> DifferentName { get; init; }
 #pragma warning restore FP0002
 }
 
@@ -39,6 +39,5 @@ public sealed class RenamedEntityPatchWithAttribute
     /// The <see cref="PatchPropertyAttribute"/> is used to specify that this property should be mapped to the <see cref="RenamedEntity.Name"/> property during patching, despite the difference in names.
     /// </summary>
     [PatchProperty(TargetPropertyName = nameof(RenamedEntity.Name))]
-    public Patchable<string?> DifferentName { get; init; }
+    public Patchable<string> DifferentName { get; init; }
 }
-

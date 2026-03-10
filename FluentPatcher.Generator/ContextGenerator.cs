@@ -83,12 +83,12 @@ internal static class ContextGenerator
                 
             // Old value
             sb.AppendLine($"        /// <summary>The original value of {prop.Name} before patching.</summary>");
-            sb.AppendLine($"        public {valueTypeName} Old{prop.Name} {{ get; internal set; }}");
+            sb.AppendLine($"        public {valueTypeName} Old{prop.Name} {{ get; internal set; }} = default!;");
             sb.AppendLine();
                 
             // New value
             sb.AppendLine($"        /// <summary>The new value of {prop.Name} after patching.</summary>");
-            sb.AppendLine($"        public {valueTypeName} New{prop.Name} {{ get; internal set; }}");
+            sb.AppendLine($"        public {valueTypeName} New{prop.Name} {{ get; internal set; }} = default!;");
             sb.AppendLine();
                 
             sb.AppendLine($"        #endregion");

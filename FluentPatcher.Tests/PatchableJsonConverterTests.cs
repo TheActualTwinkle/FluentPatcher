@@ -20,7 +20,7 @@ public sealed class PatchableJsonConverterTests
             PropertyNameCaseInsensitive = true,
             Converters = { new PatchableJsonConverterFactory() }
         };
-    
+
     private sealed class Model
     {
         public Patchable<string?> Name { get; set; }

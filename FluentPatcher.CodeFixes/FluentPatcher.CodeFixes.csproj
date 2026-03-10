@@ -5,7 +5,7 @@
         <RootNamespace>FluentPatcher.CodeFixes</RootNamespace>
         <IsPackable>true</IsPackable>
         <PackageId>FluentPatcher.CodeFixes</PackageId>
-        <Version>0.1.3</Version>
+        <Version>0.1.4</Version>
         <Authors>Fedor Moykin</Authors>
         <Description>Code fixes for FluentPatcher analyzers.</Description>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>

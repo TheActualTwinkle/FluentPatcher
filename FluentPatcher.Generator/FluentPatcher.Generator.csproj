@@ -11,7 +11,7 @@
         <Authors>Fedor Moykin</Authors>
         <PackageTags>roslyn;sourcegenerator;fluentpatcher</PackageTags>
         <RepositoryUrl>https://github.com/TheActualTwinkle/FluentPatcher</RepositoryUrl>
-        <Version>0.1.4</Version>
+        <Version>0.1.5</Version>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
         <PackageIcon>logo.png</PackageIcon>

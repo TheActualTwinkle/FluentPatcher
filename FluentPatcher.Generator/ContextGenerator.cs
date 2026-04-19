@@ -70,8 +70,8 @@ internal static class ContextGenerator
         // Generate properties for each field
         foreach (var prop in model.Properties)
         {
-            // For Patchable<T>, use the inner type for Old/New values
-            var valueTypeName = prop.IsPatchable ? prop.PatchableInnerType ?? "object" : prop.TypeName;
+            // Use target type metadata so generated context does not rely on local using directives.
+            var valueTypeName = prop.TargetPropertyTypeName ?? prop.PatchableInnerTypeFullName ?? "object";
             
             sb.AppendLine($"        #region {prop.Name}");
             sb.AppendLine();

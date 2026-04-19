@@ -17,6 +17,12 @@ internal sealed class PropertyModel
 
     public string? PatchableInnerType { get; set; }
 
+    public string? PatchableInnerTypeFullName { get; set; }
+
+    public string? TargetPropertyTypeName { get; set; }
+
+    public bool IsTargetPropertyNullable { get; set; }
+
     public string? TargetPropertyName { get; set; }
 
     public string? ComparerTypeName { get; set; }

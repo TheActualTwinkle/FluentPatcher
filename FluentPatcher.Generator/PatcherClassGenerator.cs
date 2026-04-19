@@ -142,37 +142,28 @@ internal static class PatcherClassGenerator
     private static void GeneratePatchablePropertyCode(StringBuilder sb, PropertyModel prop)
     {
         // All properties are Patchable<T> - check HasValue
-        var innerType = prop.PatchableInnerType ?? "object";
-        var nullForgivingSuffix = IsOuterNullableType(innerType) ? string.Empty : "!";
+        var targetType = prop.TargetPropertyTypeName ?? prop.PatchableInnerTypeFullName ?? "object";
+        var nullForgivingSuffix = prop.IsTargetPropertyNullable ? string.Empty : "!";
 
         sb.AppendLine($"                var existing{prop.Name}Value = prop{prop.Name}.GetValue(existing);");
-        sb.AppendLine($"                context.Old{prop.Name} = ({innerType})existing{prop.Name}Value{nullForgivingSuffix};");
+        sb.AppendLine($"                context.Old{prop.Name} = ({targetType})existing{prop.Name}Value{nullForgivingSuffix};");
         sb.AppendLine($"                if (patch.{prop.Name}.HasValue)");
         sb.AppendLine("                {");
         sb.AppendLine($"                    var patchValue = patch.{prop.Name}.Value{nullForgivingSuffix};");
         sb.AppendLine($"                    if (!Equals(existing{prop.Name}Value, patchValue))");
         sb.AppendLine("                    {");
-        sb.AppendLine($"                        context.New{prop.Name} = patchValue;");
+        sb.AppendLine($"                        context.New{prop.Name} = ({targetType})patchValue{nullForgivingSuffix};");
         sb.AppendLine($"                        context.{prop.Name}Changed = true;");
         sb.AppendLine($"                        prop{prop.Name}.SetValue(updated, patchValue);");
         sb.AppendLine("                    }");
         sb.AppendLine("                    else");
         sb.AppendLine("                    {");
-        sb.AppendLine($"                        context.New{prop.Name} = ({innerType})existing{prop.Name}Value{nullForgivingSuffix};");
+        sb.AppendLine($"                        context.New{prop.Name} = ({targetType})existing{prop.Name}Value{nullForgivingSuffix};");
         sb.AppendLine("                    }");
         sb.AppendLine("                }");
         sb.AppendLine("                else");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    context.New{prop.Name} = ({innerType})existing{prop.Name}Value{nullForgivingSuffix};");
+        sb.AppendLine($"                    context.New{prop.Name} = ({targetType})existing{prop.Name}Value{nullForgivingSuffix};");
         sb.AppendLine("                }");
-    }
-
-    private static bool IsOuterNullableType(string typeName)
-    {
-        var trimmed = typeName.Trim();
-        return trimmed.EndsWith("?")
-            || trimmed.StartsWith("Nullable<")
-            || trimmed.StartsWith("System.Nullable<")
-            || trimmed.StartsWith("global::System.Nullable<");
     }
 }

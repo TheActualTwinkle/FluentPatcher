@@ -8,9 +8,20 @@ internal static class ModelExtractor
 {
     private const string PatchPropertyAttributeName = "PatchPropertyAttribute";
     private const string CollectionPatchStrategyAttributeName = "CollectionPatchStrategyAttribute";
+    private static readonly SymbolDisplayFormat MinimalTypeDisplayFormat =
+        SymbolDisplayFormat.MinimallyQualifiedFormat.WithMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
+    private static readonly SymbolDisplayFormat FullyQualifiedTypeDisplayFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
     public static PatcherModel ExtractModel(INamedTypeSymbol classSymbol)
     {
+        INamedTypeSymbol? targetEntitySymbol = null;
+
         var model = new PatcherModel
         {
             Namespace = classSymbol.ContainingNamespace.ToDisplayString(),
@@ -27,6 +38,7 @@ internal static class ModelExtractor
             if (patchAttr.ConstructorArguments.Length > 0 &&
                 patchAttr.ConstructorArguments[0].Value is INamedTypeSymbol ctorTypeSymbol)
             {
+                targetEntitySymbol = ctorTypeSymbol;
                 model.TargetEntityTypeName = ctorTypeSymbol.ToDisplayString();
             }
 
@@ -35,7 +47,10 @@ internal static class ModelExtractor
                 {
                     case "TargetEntityType":
                         if (namedArg.Value.Value is INamedTypeSymbol typeSymbol)
+                        {
+                            targetEntitySymbol = typeSymbol;
                             model.TargetEntityTypeName = typeSymbol.ToDisplayString();
+                        }
 
                         break;
                     case "PatcherName":
@@ -59,7 +74,7 @@ internal static class ModelExtractor
             if (propertySymbol.IsIndexer)
                 continue;
 
-            var propertyModel = ExtractPropertyModel(propertySymbol);
+            var propertyModel = ExtractPropertyModel(propertySymbol, targetEntitySymbol);
             
             if (propertyModel != null)
                 model.Properties.Add(propertyModel);
@@ -68,13 +83,16 @@ internal static class ModelExtractor
         return model;
     }
 
-    private static PropertyModel? ExtractPropertyModel(IPropertySymbol propertySymbol)
+    private static PropertyModel? ExtractPropertyModel(IPropertySymbol propertySymbol, INamedTypeSymbol? targetEntitySymbol)
     {
-        var (isPatchable, patchableInnerType) = CheckPatchableType(propertySymbol.Type);
+        var (isPatchable, patchableInnerTypeSymbol) = CheckPatchableType(propertySymbol.Type);
 
         // All properties must be Patchable<T>
         if (!isPatchable)
             return null;
+
+        var patchableInnerType = patchableInnerTypeSymbol?.ToDisplayString(MinimalTypeDisplayFormat);
+        var patchableInnerTypeFull = patchableInnerTypeSymbol?.ToDisplayString(FullyQualifiedTypeDisplayFormat);
 
         var model = new PropertyModel
         {
@@ -83,7 +101,10 @@ internal static class ModelExtractor
             FullTypeName = propertySymbol.Type.ToDisplayString(),
             IsCollection = false,
             IsPatchable = true,
-            PatchableInnerType = patchableInnerType
+            PatchableInnerType = patchableInnerType,
+            PatchableInnerTypeFullName = patchableInnerTypeFull,
+            TargetPropertyTypeName = patchableInnerTypeFull,
+            IsTargetPropertyNullable = patchableInnerTypeSymbol is not null && IsNullableType(patchableInnerTypeSymbol)
         };
 
         // Determine if the patchable inner type is a collection (e.g., Patchable<List<T>>)
@@ -110,6 +131,22 @@ internal static class ModelExtractor
                     if (model.IsCollection)
                         model.CollectionStrategy = ProcessCollectionStrategyAttribute(attr, propertySymbol.Type);
                     break;
+            }
+        }
+
+        if (targetEntitySymbol is not null)
+        {
+            var targetName = model.EffectiveTargetName;
+            var targetProperty = targetEntitySymbol.GetMembers().OfType<IPropertySymbol>()
+                .FirstOrDefault(p =>
+                    p.Name == targetName &&
+                    p.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal &&
+                    !p.IsStatic);
+
+            if (targetProperty is not null)
+            {
+                model.TargetPropertyTypeName = targetProperty.Type.ToDisplayString(FullyQualifiedTypeDisplayFormat);
+                model.IsTargetPropertyNullable = IsNullableType(targetProperty.Type);
             }
         }
 
@@ -205,7 +242,7 @@ internal static class ModelExtractor
         return null;
     }
 
-    private static (bool IsPatchable, string? InnerType) CheckPatchableType(ITypeSymbol type)
+    private static (bool IsPatchable, ITypeSymbol? InnerType) CheckPatchableType(ITypeSymbol type)
     {
         if (type is not INamedTypeSymbol namedType)
             return (false, null);
@@ -216,11 +253,17 @@ internal static class ModelExtractor
         if (typeName == "FluentPatcher.Patchable<T>" ||
             namedType is { Name: "Patchable", TypeArguments.Length: 1 })
         {
-            var innerType = namedType.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-
-            return (true, innerType);
+            return (true, namedType.TypeArguments[0]);
         }
 
         return (false, null);
+    }
+
+    private static bool IsNullableType(ITypeSymbol type)
+    {
+        if (type is INamedTypeSymbol namedType && namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            return true;
+
+        return type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated;
     }
 }

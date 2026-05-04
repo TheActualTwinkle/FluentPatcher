@@ -82,7 +82,7 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        private static TEntity ShallowClone<TEntity>(TEntity source) where TEntity : class");
         sb.AppendLine("        {");
         sb.AppendLine("            var type = typeof(TEntity);");
-        sb.AppendLine("            var clone = (TEntity)Activator.CreateInstance(type)!;");
+        sb.AppendLine("            var clone = (TEntity)Activator.CreateInstance(type, nonPublic: true)!;");
         sb.AppendLine("            foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))");
         sb.AppendLine("            {");
         sb.AppendLine("                if (!prop.CanRead || !prop.CanWrite) continue;");

@@ -37,7 +37,7 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        /// <typeparam name=\"TEntity\">The type of entity to patch.</typeparam>");
         sb.AppendLine("        /// <param name=\"patch\">The patch DTO.</param>");
         sb.AppendLine("        /// <param name=\"existing\">The existing entity to patch.</param>");
-        sb.AppendLine("        /// <param name=\"cloneEntity\">Function to custom entity cloner. If null, modifies with Activator.</param>");
+        sb.AppendLine("        /// <param name=\"cloneEntity\">Optional clone factory. When null, a shallow clone is created via Activator.</param>");
         sb.AppendLine($"        /// <returns>A PatchResult containing the updated entity and {model.ContextClassName}.</returns>");
         sb.AppendLine($"        public static PatchResult<TEntity, {model.ContextClassName}> ApplyTo<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
@@ -46,6 +46,21 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var entity = ApplyPatchInternal(existing, patch, out var context, cloneEntity);");
         sb.AppendLine($"            return new PatchResult<TEntity, {model.ContextClassName}>(entity, context);");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+            
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine($"        /// Applies this {model.ClassName} patch to the target entity in-place and returns the change context.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        /// <typeparam name=\"TEntity\">The type of entity to patch.</typeparam>");
+        sb.AppendLine("        /// <param name=\"patch\">The patch DTO.</param>");
+        sb.AppendLine("        /// <param name=\"existing\">The existing entity to patch.</param>");
+        sb.AppendLine($"        public static {model.ContextClassName} ApplyInto<TEntity>(");
+        sb.AppendLine($"            this {model.ClassName} patch,");
+        sb.AppendLine($"            TEntity existing) where TEntity : class");
+        sb.AppendLine("        {");
+        sb.AppendLine("            _ = ApplyPatchInternal(existing, patch, out var context, static e => e);");
+        sb.AppendLine("            return context;");
         sb.AppendLine("        }");
         sb.AppendLine();
             
@@ -62,7 +77,7 @@ internal static class PatcherClassGenerator
         sb.AppendLine("            if (existing == null) throw new ArgumentNullException(nameof(existing));");
         sb.AppendLine("            if (patch == null) throw new ArgumentNullException(nameof(patch));");
         sb.AppendLine();
-        sb.AppendLine("            // Always work on a cloned instance so the original is not mutated.");
+        sb.AppendLine("            // Work on a clone by default; custom clone factories may choose in-place mutation.");
         sb.AppendLine("            var updated = cloneEntity != null ? cloneEntity(existing) : ShallowClone(existing);");
         sb.AppendLine($"            context = new {model.ContextClassName}();");
         sb.AppendLine("            var entityType = typeof(TEntity);");
@@ -107,6 +122,18 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        }");
         sb.AppendLine();
             
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Applies the patch in-place and returns only the updated entity.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine($"        public static TEntity ApplyToEntityInPlace<TEntity>(");
+        sb.AppendLine($"            this {model.ClassName} patch,");
+        sb.AppendLine($"            TEntity existing) where TEntity : class");
+        sb.AppendLine("        {");
+        sb.AppendLine("            _ = ApplyInto(patch, existing);");
+        sb.AppendLine("            return existing;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+            
         // Convenience extension that returns only context
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// Applies the patch and returns only the change context.");
@@ -117,6 +144,17 @@ internal static class PatcherClassGenerator
         sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null) where TEntity : class");
         sb.AppendLine("        {");
         sb.AppendLine("            return ApplyTo(patch, existing, cloneEntity).Context;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+            
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Applies the patch in-place and returns only the change context.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine($"        public static {model.ContextClassName} ApplyToContextInPlace<TEntity>(");
+        sb.AppendLine($"            this {model.ClassName} patch,");
+        sb.AppendLine($"            TEntity existing) where TEntity : class");
+        sb.AppendLine("        {");
+        sb.AppendLine("            return ApplyInto(patch, existing);");
         sb.AppendLine("        }");
         sb.AppendLine();
             

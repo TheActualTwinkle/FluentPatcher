@@ -34,6 +34,30 @@ public sealed class BasicTests
     }
 
     /// <summary>
+    /// Tests that applying a patch in-place mutates the existing entity instance.
+    /// </summary>
+    [Fact]
+    public void ApplyPatchInPlace_ShouldMutateExistingEntity()
+    {
+        // Arrange.
+        var user = UserHelper.CreateUser();
+        
+        const string newName = "New Name";
+
+        var patch = new UserUpdateDto
+        {
+            Name = newName
+        };
+
+        // Act.
+        var context = patch.ApplyInto(user);
+
+        // Assert.
+        user.Name.Should().Be(newName);
+        context.NameChanged.Should().BeTrue();
+    }
+
+    /// <summary>
     /// Tests that when applying a patch that changes a single property, only that property is updated in the resulting entity,
     /// and the change context correctly reflects the change.
     /// </summary>

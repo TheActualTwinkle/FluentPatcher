@@ -20,6 +20,17 @@ public sealed class CollectionStrategyEntity
 }
 
 /// <summary>
+/// Entity used to test collection change detection behavior.
+/// </summary>
+public sealed class CollectionComparisonEntity
+{
+    /// <summary>
+    /// Tags used to verify collection equality semantics.
+    /// </summary>
+    public List<string> Tags { get; set; } = [];
+}
+
+/// <summary>
 /// Patch class for <see cref="CollectionStrategyEntity"/> that targets <see cref="CollectionStrategyEntity.ReplaceItems"/>
 /// and uses the <see cref="CollectionPatchStrategy.Replace"/> strategy.
 /// </summary>
@@ -31,6 +42,18 @@ public sealed class CollectionStrategyReplaceUpdateDto
     /// </summary>
     [CollectionPatchStrategy(Strategy = CollectionPatchStrategy.Replace)]
     public Patchable<List<Address>> ReplaceItems { get; init; }
+}
+
+/// <summary>
+/// Patch class for <see cref="CollectionComparisonEntity"/>.
+/// </summary>
+[PatchFor(typeof(CollectionComparisonEntity))]
+public sealed class CollectionComparisonUpdateDto
+{
+    /// <summary>
+    /// New tag collection.
+    /// </summary>
+    public Patchable<List<string>> Tags { get; init; }
 }
 
 // /// <summary>

@@ -16,8 +16,10 @@ internal static class PatcherClassGenerator
         sb.AppendLine("#nullable enable");
         sb.AppendLine();
         sb.AppendLine("using System;");
+        sb.AppendLine("using System.Collections;");
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Linq;");
+        sb.AppendLine("using FluentPatcher;");
         sb.AppendLine("using FluentPatcher.Context;");
         sb.AppendLine();
         sb.AppendLine($"namespace {model.Namespace}");
@@ -38,13 +40,15 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        /// <param name=\"patch\">The patch DTO.</param>");
         sb.AppendLine("        /// <param name=\"existing\">The existing entity to patch.</param>");
         sb.AppendLine("        /// <param name=\"cloneEntity\">Optional clone factory. When null, a shallow clone is created via Activator.</param>");
+        sb.AppendLine("        /// <param name=\"options\">Optional patch behavior overrides for this call.</param>");
         sb.AppendLine($"        /// <returns>A PatchResult containing the updated entity and {model.ContextClassName}.</returns>");
         sb.AppendLine($"        public static PatchResult<TEntity, {model.ContextClassName}> ApplyTo<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
         sb.AppendLine($"            TEntity existing,");
-        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null) where TEntity : class");
+        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
-        sb.AppendLine("            var entity = ApplyPatchInternal(existing, patch, out var context, cloneEntity);");
+        sb.AppendLine("            var entity = ApplyPatchInternal(existing, patch, out var context, cloneEntity, options);");
         sb.AppendLine($"            return new PatchResult<TEntity, {model.ContextClassName}>(entity, context);");
         sb.AppendLine("        }");
         sb.AppendLine();
@@ -55,11 +59,13 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        /// <typeparam name=\"TEntity\">The type of entity to patch.</typeparam>");
         sb.AppendLine("        /// <param name=\"patch\">The patch DTO.</param>");
         sb.AppendLine("        /// <param name=\"existing\">The existing entity to patch.</param>");
+        sb.AppendLine("        /// <param name=\"options\">Optional patch behavior overrides for this call.</param>");
         sb.AppendLine($"        public static {model.ContextClassName} ApplyInto<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
-        sb.AppendLine($"            TEntity existing) where TEntity : class");
+        sb.AppendLine($"            TEntity existing,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
-        sb.AppendLine("            _ = ApplyPatchInternal(existing, patch, out var context, static e => e);");
+        sb.AppendLine("            _ = ApplyPatchInternal(existing, patch, out var context, static e => e, options);");
         sb.AppendLine("            return context;");
         sb.AppendLine("        }");
         sb.AppendLine();
@@ -72,7 +78,8 @@ internal static class PatcherClassGenerator
         sb.AppendLine($"            TEntity existing,");
         sb.AppendLine($"            {model.ClassName} patch,");
         sb.AppendLine($"            out {model.ContextClassName} context,");
-        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null) where TEntity : class");
+        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
         sb.AppendLine("            if (existing == null) throw new ArgumentNullException(nameof(existing));");
         sb.AppendLine("            if (patch == null) throw new ArgumentNullException(nameof(patch));");
@@ -108,6 +115,38 @@ internal static class PatcherClassGenerator
         sb.AppendLine("            return clone;");
         sb.AppendLine("        }");
         sb.AppendLine();
+
+        sb.AppendLine("        private static bool AreCollectionValuesEqual(object? first, object? second, PatchOptions? options)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            var comparison = options?.CollectionComparison ?? PatchOptions.DefaultCollectionComparison;");
+        sb.AppendLine("            if (comparison == CollectionChangeComparison.Reference)");
+        sb.AppendLine("                return Equals(first, second);");
+        sb.AppendLine();
+        sb.AppendLine("            if (ReferenceEquals(first, second)) return true;");
+        sb.AppendLine("            if (first == null || second == null) return false;");
+        sb.AppendLine("            if (first is not IEnumerable firstEnumerable || second is not IEnumerable secondEnumerable)");
+        sb.AppendLine("                return Equals(first, second);");
+        sb.AppendLine();
+        sb.AppendLine("            var firstEnumerator = firstEnumerable.GetEnumerator();");
+        sb.AppendLine("            var secondEnumerator = secondEnumerable.GetEnumerator();");
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+        sb.AppendLine("                while (true)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    var firstHasValue = firstEnumerator.MoveNext();");
+        sb.AppendLine("                    var secondHasValue = secondEnumerator.MoveNext();");
+        sb.AppendLine("                    if (firstHasValue != secondHasValue) return false;");
+        sb.AppendLine("                    if (!firstHasValue) return true;");
+        sb.AppendLine("                    if (!Equals(firstEnumerator.Current, secondEnumerator.Current)) return false;");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+        sb.AppendLine("            finally");
+        sb.AppendLine("            {");
+        sb.AppendLine("                (firstEnumerator as IDisposable)?.Dispose();");
+        sb.AppendLine("                (secondEnumerator as IDisposable)?.Dispose();");
+        sb.AppendLine("            }");
+        sb.AppendLine("        }");
+        sb.AppendLine();
             
         // Convenience extension that ignores context and returns only entity
         sb.AppendLine("        /// <summary>");
@@ -116,9 +155,10 @@ internal static class PatcherClassGenerator
         sb.AppendLine($"        public static TEntity ApplyToEntity<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
         sb.AppendLine($"            TEntity existing,");
-        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null) where TEntity : class");
+        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
-        sb.AppendLine("            return ApplyTo(patch, existing, cloneEntity).Entity;");
+        sb.AppendLine("            return ApplyTo(patch, existing, cloneEntity, options).Entity;");
         sb.AppendLine("        }");
         sb.AppendLine();
             
@@ -127,9 +167,10 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        /// </summary>");
         sb.AppendLine($"        public static TEntity ApplyToEntityInPlace<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
-        sb.AppendLine($"            TEntity existing) where TEntity : class");
+        sb.AppendLine($"            TEntity existing,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
-        sb.AppendLine("            _ = ApplyInto(patch, existing);");
+        sb.AppendLine("            _ = ApplyInto(patch, existing, options);");
         sb.AppendLine("            return existing;");
         sb.AppendLine("        }");
         sb.AppendLine();
@@ -141,9 +182,10 @@ internal static class PatcherClassGenerator
         sb.AppendLine($"        public static {model.ContextClassName} ApplyToContext<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
         sb.AppendLine($"            TEntity existing,");
-        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null) where TEntity : class");
+        sb.AppendLine($"            Func<TEntity, TEntity>? cloneEntity = null,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
-        sb.AppendLine("            return ApplyTo(patch, existing, cloneEntity).Context;");
+        sb.AppendLine("            return ApplyTo(patch, existing, cloneEntity, options).Context;");
         sb.AppendLine("        }");
         sb.AppendLine();
             
@@ -152,9 +194,10 @@ internal static class PatcherClassGenerator
         sb.AppendLine("        /// </summary>");
         sb.AppendLine($"        public static {model.ContextClassName} ApplyToContextInPlace<TEntity>(");
         sb.AppendLine($"            this {model.ClassName} patch,");
-        sb.AppendLine($"            TEntity existing) where TEntity : class");
+        sb.AppendLine($"            TEntity existing,");
+        sb.AppendLine($"            PatchOptions? options = null) where TEntity : class");
         sb.AppendLine("        {");
-        sb.AppendLine("            return ApplyInto(patch, existing);");
+        sb.AppendLine("            return ApplyInto(patch, existing, options);");
         sb.AppendLine("        }");
         sb.AppendLine();
             
@@ -188,7 +231,11 @@ internal static class PatcherClassGenerator
         sb.AppendLine($"                if (patch.{prop.Name}.HasValue)");
         sb.AppendLine("                {");
         sb.AppendLine($"                    var patchValue = patch.{prop.Name}.Value{nullForgivingSuffix};");
-        sb.AppendLine($"                    if (!Equals(existing{prop.Name}Value, patchValue))");
+        var equalityExpression = prop.IsCollection
+            ? $"AreCollectionValuesEqual(existing{prop.Name}Value, patchValue, options)"
+            : $"Equals(existing{prop.Name}Value, patchValue)";
+
+        sb.AppendLine($"                    if (!{equalityExpression})");
         sb.AppendLine("                    {");
         sb.AppendLine($"                        context.New{prop.Name} = ({targetType})patchValue{nullForgivingSuffix};");
         sb.AppendLine($"                        context.{prop.Name}Changed = true;");

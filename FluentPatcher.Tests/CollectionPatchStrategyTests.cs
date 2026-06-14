@@ -62,6 +62,134 @@ public sealed class CollectionPatchStrategyTests
         result.Entity.ReplaceItems.Should().ContainInOrder(newItem1, newItem2);
     }
 
+    /// <summary>
+    /// Tests that collection change detection compares items by default instead of collection references.
+    /// </summary>
+    [Fact]
+    public void ApplyPatch_WhenCollectionItemsAreEqual_ShouldNotMarkCollectionChanged()
+    {
+        // Arrange.
+        var tags = new List<string> { "stable", "ordered" };
+        var entity = new CollectionComparisonEntity
+        {
+            Tags = tags
+        };
+
+        var patch = new CollectionComparisonUpdateDto
+        {
+            Tags = new List<string> { "stable", "ordered" }
+        };
+
+        // Act.
+        var result = patch.ApplyTo(entity);
+
+        // Assert.
+        result.HasChanges.Should().BeFalse();
+        result.Context.TagsChanged.Should().BeFalse();
+        result.Entity.Tags.Should().BeSameAs(tags);
+    }
+
+    /// <summary>
+    /// Tests that ordered item differences are detected by default collection comparison.
+    /// </summary>
+    [Fact]
+    public void ApplyPatch_WhenCollectionItemsHaveDifferentOrder_ShouldMarkCollectionChanged()
+    {
+        // Arrange.
+        var entity = new CollectionComparisonEntity
+        {
+            Tags = new List<string> { "stable", "ordered" }
+        };
+
+        var patch = new CollectionComparisonUpdateDto
+        {
+            Tags = new List<string> { "ordered", "stable" }
+        };
+
+        // Act.
+        var result = patch.ApplyTo(entity);
+
+        // Assert.
+        result.HasChanges.Should().BeTrue();
+        result.Context.TagsChanged.Should().BeTrue();
+        result.Entity.Tags.Should().Equal("ordered", "stable");
+    }
+
+    /// <summary>
+    /// Tests that the global collection comparison mode can restore reference-based change detection.
+    /// </summary>
+    [Fact]
+    public void ApplyPatch_WhenGlobalCollectionComparisonIsReference_ShouldMarkDifferentCollectionInstanceChanged()
+    {
+        // Arrange.
+        var previousComparison = PatchOptions.DefaultCollectionComparison;
+        PatchOptions.DefaultCollectionComparison = CollectionChangeComparison.Reference;
+
+        try
+        {
+            var entity = new CollectionComparisonEntity
+            {
+                Tags = new List<string> { "stable", "ordered" }
+            };
+
+            var patch = new CollectionComparisonUpdateDto
+            {
+                Tags = new List<string> { "stable", "ordered" }
+            };
+
+            // Act.
+            var result = patch.ApplyTo(entity);
+
+            // Assert.
+            result.HasChanges.Should().BeTrue();
+            result.Context.TagsChanged.Should().BeTrue();
+        }
+        finally
+        {
+            PatchOptions.DefaultCollectionComparison = previousComparison;
+        }
+    }
+
+    /// <summary>
+    /// Tests that per-call options override the global collection comparison mode.
+    /// </summary>
+    [Fact]
+    public void ApplyPatch_WhenLocalCollectionComparisonOverridesGlobalReference_ShouldUseLocalComparison()
+    {
+        // Arrange.
+        var previousComparison = PatchOptions.DefaultCollectionComparison;
+        PatchOptions.DefaultCollectionComparison = CollectionChangeComparison.Reference;
+
+        try
+        {
+            var entity = new CollectionComparisonEntity
+            {
+                Tags = new List<string> { "stable", "ordered" }
+            };
+
+            var patch = new CollectionComparisonUpdateDto
+            {
+                Tags = new List<string> { "stable", "ordered" }
+            };
+
+            var options = new PatchOptions
+            {
+                CollectionComparison = CollectionChangeComparison.Sequence
+            };
+
+            // Act.
+            var result = patch.ApplyTo(entity, options: options);
+
+            // Assert.
+            result.HasChanges.Should().BeFalse();
+            result.Context.TagsChanged.Should().BeFalse();
+        }
+        finally
+        {
+            PatchOptions.DefaultCollectionComparison = previousComparison;
+        }
+    }
+
     // /// <summary>
     // /// Tests collection patching using <see cref="CollectionPatchStrategy.Append"/> strategy.
     // /// The test verifies that when applying a patch with Append strategy,

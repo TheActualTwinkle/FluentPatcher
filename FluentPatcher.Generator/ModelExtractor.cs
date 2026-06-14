@@ -203,6 +203,9 @@ internal static class ModelExtractor
         if (type is not INamedTypeSymbol namedType)
             return false;
 
+        if (namedType.SpecialType == SpecialType.System_String)
+            return false;
+
         // Unwrap nullable
         if (namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
             namedType = (INamedTypeSymbol)namedType.TypeArguments[0];
